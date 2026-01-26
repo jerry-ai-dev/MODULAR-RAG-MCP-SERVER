@@ -1,0 +1,9 @@
+This is a sample document for testing the Modular RAG MCP Server.
+
+It contains multiple paragraphs to test text splitting functionality.
+
+The RAG (Retrieval-Augmented Generation) pipeline processes documents like this one,
+splitting them into chunks, generating embeddings, and storing them in a vector database.
+
+When a user asks a question, the system retrieves relevant chunks and uses them
+to generate accurate, grounded responses.
