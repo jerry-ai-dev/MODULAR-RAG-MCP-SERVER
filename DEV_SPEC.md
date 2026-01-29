@@ -1660,7 +1660,7 @@ observability:
 | B7.3 | OpenAI & Azure Embedding 实现 | [x] | 2026-01-28 | OpenAIEmbedding + AzureEmbedding + 27个单元测试 |
 | B7.4 | Ollama Embedding 实现 | [x] | 2026-01-28 | OllamaEmbedding + 20个单元测试 |
 | B7.5 | Recursive Splitter 默认实现 | [x] | 2026-01-28 | RecursiveSplitter + 24个单元测试 + langchain集成 |
-| B7.6 | ChromaStore 默认实现 | [ ] | - | |
+| B7.6 | ChromaStore 默认实现 | [x] | 2026-01-30 | ChromaStore + 20个集成测试 + roundtrip验证 |
 | B7.7 | LLM Reranker 实现 | [ ] | - | |
 | B7.8 | Cross-Encoder Reranker 实现 | [ ] | - | |
 
@@ -1733,13 +1733,13 @@ observability:
 | 阶段 | 总任务数 | 已完成 | 进度 |
 |------|---------|--------|------|
 | 阶段 A | 3 | 3 | 100% |
-| 阶段 B | 14 | 10 | 71% |
+| 阶段 B | 14 | 11 | 79% |
 | 阶段 C | 15 | 0 | 0% |
 | 阶段 D | 7 | 0 | 0% |
 | 阶段 E | 6 | 0 | 0% |
 | 阶段 F | 5 | 0 | 0% |
 | 阶段 G | 4 | 0 | 0% |
-| **总计** | **54** | **13** | **24%** |
+| **总计** | **54** | **14** | **26%** |
 
 
 ---
@@ -1940,11 +1940,13 @@ observability:
 - **目标**：补齐 `chroma_store.py`，支持最小 `upsert(records)` 与 `query(vector, top_k, filters)`，并支持本地持久化目录（例如 `data/db/chroma/`）。
 - **修改文件**：
   - `src/libs/vector_store/chroma_store.py`
-  - `tests/integration/test_chroma_store_roundtrip.py`（可选：标记为 integration，允许跳过）
+  - `tests/integration/test_chroma_store_roundtrip.py`
 - **验收标准**：
   - provider=chroma 时 `VectorStoreFactory` 可创建。
-  - 在可用环境下完成一次最小 roundtrip：upsert→query 返回 deterministic 结果。
-- **测试方法**：`pytest -q tests/integration/test_chroma_store_roundtrip.py`（可选）。
+  - **必须完成完整的 upsert→query roundtrip 测试**：使用 mock 数据完成真实的存储和检索流程，验证返回结果的确定性和正确性。
+  - 测试应覆盖：基本 upsert、向量查询、top_k 参数、metadata filters（如支持）。
+  - 使用临时目录进行持久化测试，测试结束后清理。
+- **测试方法**：`pytest -q tests/integration/test_chroma_store_roundtrip.py`
 
 ### B7.7：LLM Reranker（读取 rerank prompt）
 - **目标**：补齐 `llm_reranker.py`，读取 `config/prompts/rerank.txt` 构造 prompt（测试中可注入替代文本），并可在失败时返回可回退信号。
