@@ -240,6 +240,163 @@ class TestChunkRecord:
         assert record.metadata["key"] == "modified"
 
 
+class TestMultimodalSupport:
+    """Test multimodal image support according to C1 specification."""
+    
+    def test_document_with_image_placeholder(self):
+        """Test Document with image placeholder in text."""
+        doc = Document(
+            id="doc_with_img",
+            text="Here is some text.\n\n[IMAGE: abc123_1_0]\n\nMore text after image.",
+            metadata={
+                "source_path": "data/test.pdf",
+                "images": [
+                    {
+                        "id": "abc123_1_0",
+                        "path": "data/images/collection/abc123_1_0.png",
+                        "page": 1,
+                        "text_offset": 20,
+                        "text_length": 21,
+                        "position": {"x": 100, "y": 200, "width": 400, "height": 300}
+                    }
+                ]
+            }
+        )
+        
+        assert "[IMAGE: abc123_1_0]" in doc.text
+        assert len(doc.metadata["images"]) == 1
+        assert doc.metadata["images"][0]["id"] == "abc123_1_0"
+        assert doc.metadata["images"][0]["text_offset"] == 20
+        assert doc.metadata["images"][0]["text_length"] == 21
+    
+    def test_document_with_multiple_images(self):
+        """Test Document with multiple image placeholders."""
+        doc = Document(
+            id="doc_multi_img",
+            text="Text [IMAGE: img1] middle [IMAGE: img2] end",
+            metadata={
+                "source_path": "data/test.pdf",
+                "images": [
+                    {
+                        "id": "img1",
+                        "path": "data/images/collection/img1.png",
+                        "page": 1,
+                        "text_offset": 5,
+                        "text_length": 14,
+                        "position": {}
+                    },
+                    {
+                        "id": "img2",
+                        "path": "data/images/collection/img2.png",
+                        "page": 2,
+                        "text_offset": 27,
+                        "text_length": 14,
+                        "position": {}
+                    }
+                ]
+            }
+        )
+        
+        assert len(doc.metadata["images"]) == 2
+        assert doc.text.count("[IMAGE:") == 2
+    
+    def test_chunk_with_image_reference(self):
+        """Test Chunk containing image placeholder and relevant image metadata."""
+        chunk = Chunk(
+            id="chunk_with_img",
+            text="Section content [IMAGE: abc123_1_0] continues here",
+            metadata={
+                "source_path": "data/test.pdf",
+                "chunk_index": 0,
+                "images": [
+                    {
+                        "id": "abc123_1_0",
+                        "path": "data/images/collection/abc123_1_0.png",
+                        "page": 1,
+                        "text_offset": 16,
+                        "text_length": 21,
+                        "position": {}
+                    }
+                ]
+            }
+        )
+        
+        assert "[IMAGE: abc123_1_0]" in chunk.text
+        assert "images" in chunk.metadata
+        assert len(chunk.metadata["images"]) == 1
+    
+    def test_chunk_record_with_image_captions(self):
+        """Test ChunkRecord with image captions from ImageCaptioner."""
+        record = ChunkRecord(
+            id="record_with_caption",
+            text="Architecture diagram [IMAGE: diagram_001] shows the system",
+            metadata={
+                "source_path": "data/test.pdf",
+                "chunk_index": 0,
+                "images": [
+                    {
+                        "id": "diagram_001",
+                        "path": "data/images/collection/diagram_001.png",
+                        "page": 5,
+                        "text_offset": 21,
+                        "text_length": 21,
+                        "position": {}
+                    }
+                ],
+                "image_captions": {
+                    "diagram_001": "System architecture showing three-tier design with load balancer"
+                }
+            },
+            dense_vector=[0.1, 0.2, 0.3]
+        )
+        
+        assert "image_captions" in record.metadata
+        assert record.metadata["image_captions"]["diagram_001"]
+        assert "architecture" in record.metadata["image_captions"]["diagram_001"].lower()
+    
+    def test_image_metadata_structure_validation(self):
+        """Test that image metadata follows the C1 specification structure."""
+        image_ref = {
+            "id": "doc_hash_page_seq",
+            "path": "data/images/collection/doc_hash_page_seq.png",
+            "page": 1,
+            "text_offset": 100,
+            "text_length": 25,
+            "position": {"x": 0, "y": 0, "width": 500, "height": 400}
+        }
+        
+        # Verify all required fields are present
+        assert "id" in image_ref
+        assert "path" in image_ref
+        assert "text_offset" in image_ref
+        assert "text_length" in image_ref
+        
+        # Verify field types
+        assert isinstance(image_ref["id"], str)
+        assert isinstance(image_ref["path"], str)
+        assert isinstance(image_ref["text_offset"], int)
+        assert isinstance(image_ref["text_length"], int)
+        assert isinstance(image_ref["position"], dict)
+    
+    def test_document_without_images(self):
+        """Test Document without images (images field can be omitted or empty list)."""
+        # Omit images field
+        doc1 = Document(
+            id="doc_no_img_1",
+            text="Plain text document",
+            metadata={"source_path": "data/test.txt"}
+        )
+        assert "images" not in doc1.metadata or doc1.metadata.get("images", []) == []
+        
+        # Explicit empty list
+        doc2 = Document(
+            id="doc_no_img_2",
+            text="Plain text document",
+            metadata={"source_path": "data/test.txt", "images": []}
+        )
+        assert doc2.metadata["images"] == []
+
+
 class TestMetadataConventions:
     """Test metadata field conventions across types."""
     

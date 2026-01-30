@@ -2009,6 +2009,16 @@ observability:
 - **验收标准**：
   - 类型可序列化（dict/json）且字段稳定（单元测试断言）。
   - `metadata` 约定最少包含 `source_path`，其余字段允许增量扩展但不得破坏兼容。
+  - **`metadata.images` 字段规范**（用于多模态支持）：
+    - 结构：`List[{"id": str, "path": str, "page": int, "text_offset": int, "text_length": int, "position": dict}]`
+    - `id`：全局唯一图片标识符（建议格式：`{doc_hash}_{page}_{seq}`）
+    - `path`：图片文件存储路径（约定：`data/images/{collection}/{image_id}.png`）
+    - `page`：图片在原文档中的页码（可选，适用于PDF等分页文档）
+    - `text_offset`：占位符在 `Document.text` 中的起始字符位置（从0开始计数）
+    - `text_length`：占位符的字符长度（通常为 `len("[IMAGE: {image_id}]")`）
+    - `position`：图片在原文档中的物理位置信息（可选，如PDF坐标、像素位置、尺寸等）
+    - 说明：通过 `text_offset` 和 `text_length` 可精确定位图片在文本中的位置，支持同一图片多次出现的场景
+  - **文本中图片占位符规范**：在 `Document.text` 中，图片位置使用 `[IMAGE: {image_id}]` 格式标记。
 - **测试方法**：`pytest -q tests/unit/test_core_types.py`。
 
 ### C2：文件完整性检查（SHA256）
@@ -2040,8 +2050,19 @@ observability:
 - **实现类/函数**：
   - `BaseLoader.load(path) -> Document`
   - `PdfLoader.load(path)`
-- **验收标准**：对 sample PDF（fixtures）能产出 Document，metadata 至少含 `source_path`。
+- **验收标准**：
+  - **基础要求**：对 sample PDF（fixtures）能产出 Document，metadata 至少含 `source_path`。
+  - **图片处理要求**（遵循 C1 定义的契约）：
+    - 若 PDF 包含图片，应提取图片并保存到 `data/images/{doc_hash}/` 目录
+    - 在 `Document.text` 中，图片位置插入占位符：`[IMAGE: {image_id}]`
+    - 在 `metadata.images` 中记录图片信息（格式见 C1 规范）
+    - 若 PDF 无图片，`metadata.images` 可为空列表或省略该字段
+  - **降级行为**：图片提取失败不应阻塞文本解析，可在日志中记录警告。
 - **测试方法**：`pytest -q tests/unit/test_loader_pdf_contract.py`。
+- **测试建议**：
+  - 准备两个测试文件：`simple.pdf`（纯文本）和 `with_images.pdf`（包含图片）
+  - 验证纯文本PDF能正常解析
+  - 验证带图片PDF能提取图片并正确插入占位符
 
 ### C4：Splitter 集成（调用 Libs）
 - **目标**：在 Pipeline 中集成 `libs.splitter`，验证 Splitter 工厂配置是否生效。
