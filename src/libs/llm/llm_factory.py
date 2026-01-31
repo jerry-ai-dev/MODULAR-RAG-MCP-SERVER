@@ -18,6 +18,23 @@ if TYPE_CHECKING:
     from src.core.settings import Settings
 
 
+# Import and register Vision LLM providers at module load time
+def _register_vision_providers() -> None:
+    """Register all Vision LLM provider implementations.
+    
+    This function is called at module import time to populate the
+    Vision LLM provider registry. Add new providers here as they
+    are implemented.
+    """
+    try:
+        from src.libs.llm.azure_vision_llm import AzureVisionLLM
+        from src.libs.llm.llm_factory import LLMFactory
+        LLMFactory.register_vision_provider("azure", AzureVisionLLM)
+    except ImportError:
+        # Provider not yet implemented, skip registration
+        pass
+
+
 class LLMFactory:
     """Factory for creating LLM provider instances.
     
@@ -213,3 +230,7 @@ class LLMFactory:
             Sorted list of available Vision LLM provider identifiers.
         """
         return sorted(cls._VISION_PROVIDERS.keys())
+
+
+# Register Vision LLM providers at module load time
+_register_vision_providers()
