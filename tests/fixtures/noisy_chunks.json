@@ -1,0 +1,38 @@
+{
+  "typical_noise_scenario": {
+    "input": "\n\n   Chapter 3: Introduction   \n\n\nThis is a valuable paragraph with important information.\n\n────────────────────────────\nPage 15\n\n   Footer: Confidential © 2024   \n\n",
+    "expected_clean": "Chapter 3: Introduction\n\nThis is a valuable paragraph with important information."
+  },
+  "ocr_errors": {
+    "input": "The qu1ck br0wn f0x jumps 0ver the 1azy d0g. Th1s t3xt c0nta1ns OCR 3rr0rs.",
+    "expected_clean": "The qu1ck br0wn f0x jumps 0ver the 1azy d0g. Th1s t3xt c0nta1ns OCR 3rr0rs.",
+    "note": "Rule-based refiner preserves OCR errors; LLM can optionally correct them"
+  },
+  "page_header_footer": {
+    "input": "────────────────────────────\nPage 42 | Section 5.3\n────────────────────────────\n\nThe actual content starts here and continues with valuable information.\n\n────────────────────────────\nFooter: Company Name | 2024\n────────────────────────────",
+    "expected_clean": "The actual content starts here and continues with valuable information."
+  },
+  "excessive_whitespace": {
+    "input": "This    has     excessive     spaces.\n\n\n\n\nAnd    too   many\n\n\n\nnewlines.",
+    "expected_clean": "This has excessive spaces.\n\nAnd too many\n\nnewlines."
+  },
+  "format_markers": {
+    "input": "<div class=\"content\">This is the actual content.</div>\n<!-- This is a comment -->\n**Bold text** and *italic text*.",
+    "expected_clean": "This is the actual content.\n\n**Bold text** and *italic text*.",
+    "note": "Preserve Markdown formatting, remove HTML comments and tags"
+  },
+  "clean_text": {
+    "input": "This is already clean text with proper formatting.\n\nIt has normal paragraphs and spacing.",
+    "expected_clean": "This is already clean text with proper formatting.\n\nIt has normal paragraphs and spacing.",
+    "note": "Should not over-clean already good text"
+  },
+  "code_blocks": {
+    "input": "```python\ndef    hello_world():\n    print(\"Hello,    World!\")\n    return    True\n```\n\nThis function has intentional spacing.",
+    "expected_clean": "```python\ndef    hello_world():\n    print(\"Hello,    World!\")\n    return    True\n```\n\nThis function has intentional spacing.",
+    "note": "Must preserve code block formatting and internal spacing"
+  },
+  "mixed_noise": {
+    "input": "────────────────────────────\nPage 123\n────────────────────────────\n\n\n## Real Heading\n\nThis paragraph  has   mixed   issues:  \n- Extra    spaces  \n- Multiple\n\n\n\nblank lines\n\n<!-- HTML comment to remove -->\n\n────────────────────────────\nFooter Text\n────────────────────────────\n\n",
+    "expected_clean": "## Real Heading\n\nThis paragraph has mixed issues:\n- Extra spaces\n- Multiple\n\nblank lines"
+  }
+}

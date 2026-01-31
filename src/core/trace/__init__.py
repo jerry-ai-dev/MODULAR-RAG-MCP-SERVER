@@ -6,4 +6,6 @@ This package contains tracing components:
 - Trace collector
 """
 
-__all__ = []
+from src.core.trace.trace_context import TraceContext
+
+__all__ = ['TraceContext']

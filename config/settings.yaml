@@ -6,13 +6,14 @@
 # LLM Configuration
 # =============================================================================
 llm:
-  provider: "openai"  # Options: openai, azure, ollama, deepseek
-  model: "gpt-4o-mini"
+  provider: "azure"  # Options: openai, azure, ollama, deepseek
+  model: "gpt-4o"
+  deployment_name: "gpt-4o"
+  azure_endpoint: "YOUR_AZURE_ENDPOINT"
+  api_version: "2024-02-15-preview"
+  api_key: "YOUR_API_KEY"
   temperature: 0.0
   max_tokens: 4096
-  # Provider-specific settings (uncomment as needed)
-  # api_key: ${OPENAI_API_KEY}  # Use environment variable
-  # base_url: "https://api.openai.com/v1"
 
 # =============================================================================
 # Embedding Configuration
@@ -77,3 +78,8 @@ ingestion:
   chunk_overlap: 200
   splitter: "recursive"  # Options: recursive, semantic, fixed_length
   batch_size: 100
+  
+# Chunk Refiner Configuration (C5)
+chunk_refiner:
+  use_llm: false  # Set to true to enable LLM-based refinement (requires LLM config)
+  # When use_llm is false or LLM call fails, falls back to rule-based refinement
