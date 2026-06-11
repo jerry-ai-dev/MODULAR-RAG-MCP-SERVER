@@ -529,7 +529,90 @@ class TestSparseRetrieverTypeIntegration:
         
         # Recreate from dict
         recreated = RetrievalResult.from_dict(result_dict)
-        
+
         assert recreated.chunk_id == results[0].chunk_id
         assert recreated.score == results[0].score
         assert recreated.text == results[0].text
+
+
+# ============================================================================
+# Test: ID Mapping Robustness
+# ============================================================================
+
+class TestSparseRetrieverIDMapping:
+    """Tests for robust ID-based record mapping in _merge_results."""
+
+    def test_merge_with_missing_record(self):
+        """Test that missing records are skipped correctly via ID mapping."""
+        # Create a vector store with only partial records
+        class MockVectorStorePartial:
+            def get_by_ids(self, ids, trace=None, **kwargs):
+                # Simulate chunk_002 missing from vector store
+                return [
+                    {"id": "chunk_001", "text": "First chunk", "metadata": {}},
+                    {},  # chunk_002 missing
+                    {"id": "chunk_003", "text": "Third chunk", "metadata": {}},
+                ]
+
+        # BM25 returns 3 results
+        class MockBM25WithThreeResults:
+            def load(self, collection="default", trace=None):
+                return True
+
+            def query(self, query_terms, top_k=10, trace=None):
+                return [
+                    {"chunk_id": "chunk_001", "score": 3.0},
+                    {"chunk_id": "chunk_002", "score": 2.0},
+                    {"chunk_id": "chunk_003", "score": 1.0},
+                ]
+
+        bm25 = MockBM25WithThreeResults()
+        vs = MockVectorStorePartial()
+        retriever = SparseRetriever(bm25_indexer=bm25, vector_store=vs)
+
+        results = retriever.retrieve(["test"])
+
+        # Should only return 2 results (chunk_002 missing)
+        assert len(results) == 2
+        assert results[0].chunk_id == "chunk_001"
+        assert results[0].score == 3.0
+        assert results[1].chunk_id == "chunk_003"
+        assert results[1].score == 1.0
+
+    def test_merge_with_reordered_records(self):
+        """Test that ID mapping handles records returned in different order."""
+        # Simulate a vector store that returns records in a different order
+        class MockVectorStoreReordered:
+            def get_by_ids(self, ids, trace=None, **kwargs):
+                # Intentionally return in reverse order to test ID mapping
+                return [
+                    {"id": "chunk_003", "text": "Third", "metadata": {}},
+                    {"id": "chunk_002", "text": "Second", "metadata": {}},
+                    {"id": "chunk_001", "text": "First", "metadata": {}},
+                ]
+
+        class MockBM25Ordered:
+            def load(self, collection="default", trace=None):
+                return True
+
+            def query(self, query_terms, top_k=10, trace=None):
+                return [
+                    {"chunk_id": "chunk_001", "score": 3.0},
+                    {"chunk_id": "chunk_002", "score": 2.0},
+                    {"chunk_id": "chunk_003", "score": 1.0},
+                ]
+
+        bm25 = MockBM25Ordered()
+        vs = MockVectorStoreReordered()
+        retriever = SparseRetriever(bm25_indexer=bm25, vector_store=vs)
+
+        results = retriever.retrieve(["test"])
+
+        # Should maintain BM25 score order using ID mapping
+        assert len(results) == 3
+        assert results[0].chunk_id == "chunk_001"
+        assert results[0].text == "First"
+        assert results[1].chunk_id == "chunk_002"
+        assert results[1].text == "Second"
+        assert results[2].chunk_id == "chunk_003"
+        assert results[2].text == "Third"

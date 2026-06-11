@@ -245,20 +245,28 @@ class SparseRetriever:
         records: List[Dict[str, Any]],
     ) -> List[RetrievalResult]:
         """Merge BM25 scores with text and metadata from vector store.
-        
+
         Args:
             bm25_results: Results from BM25 query, each with 'chunk_id' and 'score'.
             records: Records from vector store, each with 'id', 'text', 'metadata'.
-        
+                     The records list should be in the same order as chunk_ids passed to get_by_ids.
+
         Returns:
             List of RetrievalResult objects with complete information.
         """
         results = []
-        
-        for bm25_result, record in zip(bm25_results, records):
+
+        # Build ID-to-record mapping for explicit lookup
+        # This is more robust than zip() when records may be missing or reordered
+        record_map = {record.get('id'): record for record in records if record}
+
+        for bm25_result in bm25_results:
             chunk_id = bm25_result["chunk_id"]
             score = bm25_result["score"]
-            
+
+            # Explicitly look up record by chunk_id
+            record = record_map.get(chunk_id)
+
             # Handle case where record was not found
             if not record:
                 logger.warning(
@@ -266,11 +274,11 @@ class SparseRetriever:
                     "Skipping this result."
                 )
                 continue
-            
+
             # Validate record has expected fields
             text = record.get('text', '')
             metadata = record.get('metadata', {})
-            
+
             try:
                 result = RetrievalResult(
                     chunk_id=chunk_id,
@@ -285,7 +293,7 @@ class SparseRetriever:
                     "Skipping this result."
                 )
                 continue
-        
+
         return results
 
 
