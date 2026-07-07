@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/jerry-ai-dev-modular-rag-mcp-server-badge.png)](https://mseep.ai/app/jerry-ai-dev-modular-rag-mcp-server)
+
 # Modular RAG MCP Server
 
 > 一个可插拔、可观测的模块化 RAG（检索增强生成）服务框架，通过 MCP（Model Context Protocol）协议对外暴露工具接口，支持 Copilot / Claude 等 AI 助手直接调用。同时也是一份专为**大模型相关岗位学习与面试求职**设计的实战项目与配套教学资源。
